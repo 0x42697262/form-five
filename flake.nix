@@ -12,7 +12,7 @@
       in with pkgs; {
         devShells.default = mkShell {
           buildInputs =
-            [ (python313.withPackages (modules: with modules; [ pytest ])) ];
+            [ (python313.withPackages (modules: with modules; [ pytest ])) uv ];
 
           shellHook = ''
             echo "Setup complete."
