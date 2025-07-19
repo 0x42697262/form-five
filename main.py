@@ -58,7 +58,7 @@ def main():
         print(f"Total points: {log['__points']}")
         print()
     print('-'*4)
-    print(f"Total points this week: {total_points}")
+    print(f"Total points this week: {round(total_points, 2)}")
     print(f"Minimum weekly points required: {MINIMUM_WEEKLY_POINTS}")
     if total_points < MINIMUM_WEEKLY_POINTS:
         print("You did not reach the minimum weekly points. Please put more effort.")

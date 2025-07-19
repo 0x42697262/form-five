@@ -162,7 +162,7 @@ def calculate_points_weekly(db_path: Path) -> dict[str, dict]:
             else:
                 points += hours
         points = max(0, points)
-        summary[day]['__points'] = points
+        summary[day]['__points'] = round(points, 2)
 
     summary['__monday'] = monday.strftime("%Y-%m-%d")
     summary['__sunday'] = (monday + timedelta(days=6)).strftime("%Y-%m-%d")
