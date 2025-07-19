@@ -102,7 +102,6 @@ def arg_update(category: str, hours: str, db_path: Path):
 
     current_hours = read_hours(
         date_str=today, category=category, db_path=db_path)[0]
-    print(current_hours)
     total_hours = current_hours + hours
 
     resp = update_category(category, total_hours, db_path)
@@ -136,10 +135,11 @@ def calculate_points_weekly(db_path: Path) -> dict[str, dict]:
         db_path.parent} parent directory does not exists"
 
     today = date.today()
+    monday = today - timedelta(days=today.weekday())
     summary = {}
 
-    for i in range(7, -1, -1):
-        selected_date = today - timedelta(days=i)
+    selected_date = monday
+    while selected_date <= today:
         history = database.read_day(
             selected_date=selected_date.strftime("%Y-%m-%d"), db_path=db_path)
         for log in history:
@@ -150,6 +150,7 @@ def calculate_points_weekly(db_path: Path) -> dict[str, dict]:
             if not summary.get(day):
                 summary[day] = {}
             summary[day][category] = hours
+        selected_date += timedelta(days=1)
 
     for day, log in summary.items():
         points = 0
@@ -162,6 +163,9 @@ def calculate_points_weekly(db_path: Path) -> dict[str, dict]:
                 points += hours
         points = max(0, points)
         summary[day]['__points'] = points
+
+    summary['__monday'] = monday.strftime("%Y-%m-%d")
+    summary['__sunday'] = (monday + timedelta(days=6)).strftime("%Y-%m-%d")
 
     return summary
 

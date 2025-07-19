@@ -45,7 +45,11 @@ def main():
 
     points = logic.calculate_points_weekly(db_path=args.database)
     total_points = 0
+    print(f"Start date of the week: {points.get('__monday')}")
+    print(f"End date of the week: {points.get('__sunday')}")
     for day, log in points.items():
+        if not isinstance(log, dict):
+            continue
         print(f"{day}:")
         for category, hours in log.items():
             if category != '__points':
