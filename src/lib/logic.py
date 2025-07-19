@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 import sqlite3
 
@@ -24,6 +24,8 @@ ALLOWED_CATEGORIES = {
     "bug_bounty":                   "bug_bounty",
     "stock_trading":                "stock_trading",
     "statistical_learning":         "statistical_learning",
+    "machine_learning":             "statistical_learning",
+    "deep_learning":                "statistical_learning",
     "cryptography":                 "cryptography",
     "osu":                          "osu",
     "gaming":                       "gaming",
@@ -36,6 +38,7 @@ ALLOWED_CATEGORIES = {
 def update_category(category: str, hours: int | float, db_path: Path) -> type:
     category = category.lower()
     today = date.today().strftime("%Y-%m-%d")
+    hours = round(hours, 2)
 
     assert isinstance(hours, (int, float)), "hours is not a number"
     assert isinstance(db_path, Path), "Not a Path"
@@ -87,7 +90,10 @@ def read_hours(date_str: str, category: str, db_path: Path) -> int | float:
 
 
 def arg_update(category: str, hours: str, db_path: Path):
-    assert hours.isdigit() is True, "hours is not a number"
+    try:
+        hours = float(hours)
+    except ValueError:
+        raise "hours is not a number"
     category = ALLOWED_CATEGORIES.get(category.lower())
     assert category is not None, 'Not a valid category'
 
@@ -124,25 +130,40 @@ def arg_view(db_path: Path) -> list:
     return result
 
 
-def calculate_points(db_path: Path) -> float:
+def calculate_points_weekly(db_path: Path) -> dict[str, dict]:
     assert isinstance(db_path, Path), "Not a Path"
     assert db_path.parent.exists(), f"{
         db_path.parent} parent directory does not exists"
 
-    today = date.today().strftime("%Y-%m-%d")
-    points_today: float = database.read_day_hours_total(
-        db_path=db_path, selected_date=today)[0]
-    doomscroll = database.read_hours(
-        db_path=db_path, selected_date=today, category='doomscroll')[0]
-    osu = database.read_hours(
-        db_path=db_path, selected_date=today, category='osu')[0]
-    gaming = database.read_hours(
-        db_path=db_path, selected_date=today, category='gaming')[0]
-    points_today -= doomscroll * 2
-    points_today -= osu
-    points_today -= gaming
+    today = date.today()
+    summary = {}
 
-    return points_today
+    for i in range(7, -1, -1):
+        selected_date = today - timedelta(days=i)
+        history = database.read_day(
+            selected_date=selected_date.strftime("%Y-%m-%d"), db_path=db_path)
+        for log in history:
+            day = log[0]
+            category = log[1]
+            hours = log[2]
+
+            if not summary.get(day):
+                summary[day] = {}
+            summary[day][category] = hours
+
+    for day, log in summary.items():
+        points = 0
+        for category, hours in log.items():
+            if category in ['doomscroll']:
+                points -= hours
+            elif category in ['gaming', 'osu']:
+                pass
+            else:
+                points += hours
+        points = max(0, points)
+        summary[day]['__points'] = points
+
+    return summary
 
 
 def is_valid_date(date_str: str) -> bool:

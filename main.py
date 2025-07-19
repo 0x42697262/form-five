@@ -3,6 +3,8 @@ import argparse
 
 from src.lib import logic
 
+MINIMUM_WEEKLY_POINTS = 21
+
 
 def main():
     default_db_path: Path = Path("./chicken-habits.db").absolute()
@@ -41,16 +43,22 @@ def main():
         hours = args.set[1]
         logic.arg_set(category=category, hours=hours, db_path=args.database)
 
-    result = logic.arg_view(db_path=args.database)
-    current_date = ''
-    for log in result:
-        if current_date != log[0]:
-            current_date = log[0]
-            print(f"{current_date}:")
-        print(f"You logged `{log[1]}` for {log[2]} hours.")
-    print()
-    print(f"Your total points today: {logic.calculate_points(args.database)}")
-    print("Minimum points required per day: 2.0")
+    points = logic.calculate_points_weekly(db_path=args.database)
+    total_points = 0
+    for day, log in points.items():
+        print(f"{day}:")
+        for category, hours in log.items():
+            if category != '__points':
+                print(f"You logged `{category}` for {hours} hours.")
+        total_points += log['__points']
+        print(f"Total points: {log['__points']}")
+        print()
+    print('-'*4)
+    print(f"Total points this week: {total_points}")
+    print(f"Minimum weekly points required: {MINIMUM_WEEKLY_POINTS}")
+    if total_points < MINIMUM_WEEKLY_POINTS:
+        print("You did not reach the minimum weekly points. Please put more effort.")
+    print('-'*4)
 
 
 if __name__ == "__main__":

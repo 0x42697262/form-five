@@ -87,7 +87,7 @@ def read_day(db_path: Path, selected_date: str):
 
     cur.execute("""SELECT * FROM habit_log
                     WHERE date=?;
-                """, selected_date
+                """, (selected_date,)
                 )
     result = cur.fetchall()
 
