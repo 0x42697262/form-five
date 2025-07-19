@@ -38,7 +38,7 @@ def update(db_path: Path, category: str, hours: int) -> type:
     if not isinstance(db_path, Path):
         return sqlite3.DataError
 
-    today = date.today().strftime("YYYY-MM-DD")
+    today = date.today().strftime("%Y-%m-%d")
     hours = math.floor(hours)
 
     con = sqlite3.connect(db_path)
