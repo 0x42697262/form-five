@@ -1,6 +1,4 @@
-import math
 import sqlite3
-from datetime import date, datetime
 from pathlib import Path
 
 
@@ -32,14 +30,13 @@ def create(db_path: Path) -> type:
     return sqlite3.SQLITE_OK
 
 
-def update(db_path: Path, category: str, hours: int) -> type:
+def update(db_path: Path, date: str, category: str, hours: int) -> type:
     if not isinstance(hours, (float, int)):
         return sqlite3.DataError
     if not isinstance(db_path, Path):
         return sqlite3.DataError
-
-    today = date.today().strftime("%Y-%m-%d")
-    # hours = math.floor(hours)
+    if not db_path.exists():
+        return sqlite3.DatabaseError
 
     con = sqlite3.connect(db_path)
     cur = con.cursor()
@@ -48,7 +45,7 @@ def update(db_path: Path, category: str, hours: int) -> type:
                 VALUES (?, ?, ?)
                 ON CONFLICT (date, category) DO UPDATE SET
                     hours = excluded.hours;
-                """, (today, category, hours)
+                """, (date, category, hours)
                 )
 
     con.commit()
@@ -59,8 +56,8 @@ def update(db_path: Path, category: str, hours: int) -> type:
 def read(db_path: Path, selected_date: str, category: str):
     if not isinstance(db_path, Path):
         return sqlite3.DataError
-    if not is_valid_date(selected_date):
-        return sqlite3.DataError
+    if not db_path.exists():
+        return sqlite3.DatabaseError
 
     category = category.lower()
 
@@ -72,16 +69,66 @@ def read(db_path: Path, selected_date: str, category: str):
                         WHERE date=? AND category=?;
                     """, (selected_date, category)
                     )
-    else:
+    if not category or not selected_date:
         cur.execute("SELECT * FROM habit_log;")
     result = cur.fetchall()
 
     return result
 
 
-def is_valid_date(date_str: str) -> bool:
-    try:
-        datetime.strptime(date_str, "%Y-%m-%d")
-        return True
-    except ValueError:
-        return False
+def read_day(db_path: Path, selected_date: str):
+    if not isinstance(db_path, Path):
+        return sqlite3.DataError
+    if not db_path.exists():
+        return sqlite3.DatabaseError
+
+    con = sqlite3.connect(db_path)
+    cur = con.cursor()
+
+    cur.execute("""SELECT * FROM habit_log
+                    WHERE date=?;
+                """, selected_date
+                )
+    result = cur.fetchall()
+
+    return result
+
+
+def read_day_hours_total(db_path: Path, selected_date: str) -> float:
+    if not isinstance(db_path, Path):
+        return sqlite3.DataError
+    if not db_path.exists():
+        return sqlite3.DatabaseError
+
+    con = sqlite3.connect(db_path)
+    cur = con.cursor()
+
+    cur.execute("SELECT SUM(hours) FROM habit_log WHERE date=?;",
+                (selected_date,))
+    result = cur.fetchone()
+
+    return result
+
+
+def read_hours(db_path: Path, selected_date: str, category: str):
+    if not isinstance(db_path, Path):
+        return sqlite3.DataError
+    if not db_path.exists():
+        return sqlite3.DatabaseError
+
+    category = category.lower()
+
+    con = sqlite3.connect(db_path)
+    cur = con.cursor()
+
+    if category:
+        cur.execute("""SELECT hours FROM habit_log
+                        WHERE date=? AND category=?;
+                    """, (selected_date, category)
+                    )
+    result = cur.fetchone()
+
+    if not result:
+        result = (0,)
+
+    return result
