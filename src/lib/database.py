@@ -1,6 +1,6 @@
 import math
 import sqlite3
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 
@@ -39,7 +39,7 @@ def update(db_path: Path, category: str, hours: int) -> type:
         return sqlite3.DataError
 
     today = date.today().strftime("%Y-%m-%d")
-    hours = math.floor(hours)
+    # hours = math.floor(hours)
 
     con = sqlite3.connect(db_path)
     cur = con.cursor()
@@ -54,3 +54,34 @@ def update(db_path: Path, category: str, hours: int) -> type:
     con.commit()
 
     return sqlite3.SQLITE_OK
+
+
+def read(db_path: Path, selected_date: str, category: str):
+    if not isinstance(db_path, Path):
+        return sqlite3.DataError
+    if not is_valid_date(selected_date):
+        return sqlite3.DataError
+
+    category = category.lower()
+
+    con = sqlite3.connect(db_path)
+    cur = con.cursor()
+
+    if category:
+        cur.execute("""SELECT * FROM habit_log
+                        WHERE date=? AND category=?;
+                    """, (selected_date, category)
+                    )
+    else:
+        cur.execute("SELECT * FROM habit_log;")
+    result = cur.fetchall()
+
+    return result
+
+
+def is_valid_date(date_str: str) -> bool:
+    try:
+        datetime.strptime(date_str, "%Y-%m-%d")
+        return True
+    except ValueError:
+        return False
